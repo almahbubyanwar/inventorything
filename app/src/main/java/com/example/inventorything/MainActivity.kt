@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -68,6 +69,9 @@ fun Main(modifier: Modifier = Modifier,
         isLoggedIn = true
     }
 
+    val itemsViewModel: ItemsViewModel = viewModel()
+    val items by itemsViewModel.itemsState.collectAsStateWithLifecycle()
+
     Column() {
         if (!isLoggedIn) {
             LoginScreen(setLoggedIn = { setLoggedIn() }, loginViewModel = loginViewModel)
@@ -75,11 +79,14 @@ fun Main(modifier: Modifier = Modifier,
         else {
             NavHost(navController = navController, startDestination = Home) {
                 composable<Home> {
-                    Homepage(modifier = modifier, username = loginState.username,
-                        onNavigateToAddItem = {navController.navigate(AddItem)})
+                    Homepage(modifier = modifier.fillMaxWidth(), username = loginState.username,
+                        onNavigateToAddItem = {navController.navigate(AddItem)},
+                        items = items.items)
                 }
                 composable<AddItem> {
-                    AddItemForm(modifier = modifier)
+                    AddItemForm(modifier = modifier.fillMaxWidth(),
+                        addItem = itemsViewModel::addItem,
+                        onNavigateToHome={navController.navigate(Home)})
                 }
             }
         }
@@ -89,7 +96,8 @@ fun Main(modifier: Modifier = Modifier,
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Homepage(modifier: Modifier = Modifier, username: String,
-             onNavigateToAddItem: () -> Unit) {
+             onNavigateToAddItem: () -> Unit, items: List<Item>) {
+
     Column(modifier) {
         TopAppBar(
             colors = TopAppBarDefaults.topAppBarColors(
@@ -116,12 +124,9 @@ fun Homepage(modifier: Modifier = Modifier, username: String,
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                InventoryItem("tester", 67)
-                InventoryItem("tester", 67)
-                InventoryItem("tester", 67)
-                InventoryItem("tester", 67)
-                InventoryItem("tester", 67)
-                InventoryItem("tester", 67)
+                for (item in items) {
+                    InventoryItem(item.name, item.amount)
+                }
             }
         }
     }
